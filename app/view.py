@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import (
 	QWidget, QFormLayout, QMainWindow,
 	QLineEdit, QVBoxLayout, QLabel,
 	QDialogButtonBox, QGridLayout, QPushButton)
+from PyQt5.QtWidgets import QTableWidget,QTableWidgetItem
 from PyQt5.QtCore import Qt
 from checkable_combo_box import CheckableComboBox
 
@@ -10,7 +11,7 @@ class AppView(QMainWindow):
 	def __init__(self, products):
 		"""View initializer."""
 		super().__init__()
-		self.setWindowTitle('Super App')
+		self.setWindowTitle('Calcul compatibilité produits')
 		self.setFixedSize(400, 400)
 		self.generalLayout = QVBoxLayout()
 		self._centralWidget = QWidget(self)
@@ -41,22 +42,23 @@ class AppView(QMainWindow):
 	def _create_display(self):
 		"""Create the display."""
 		# Create the display widget
-		self.display = QLabel()
-		# Set some display's properties
-		self.display.setFixedHeight(300)
-		self.display.setAlignment(Qt.AlignCenter)
-		# Add the display to the general layout
-		self.generalLayout.addWidget(self.display)
+		self.table = QTableWidget()
+		self.table.setRowCount(1)
+		self.table.setColumnCount(2)
+		self.table.setItem(0, 0, QTableWidgetItem("Groupe"))
+		self.table.setItem(0, 1, QTableWidgetItem("Produit"))
+		self.generalLayout.addWidget(self.table)
 
-	def setDisplayText(self, text):
-		"""Set display's text."""
-		self.display.setText(text)
-		self.display.setFocus()
 
-	def displayText(self):
-		"""Get display's text."""
-		return self.display.text()
+	def set_table(self, group_dict):
+		i = 1
+		for g, plist in group_dict.items():
+			for p in plist:
+				self.table.insertRow(i)
+				self.table.setItem(i, 0, QTableWidgetItem(str(g)))
+				self.table.setItem(i, 1, QTableWidgetItem(str(p)))
+				i += 1
 
-	def clearDisplay(self):
-		"""Clear the display."""
-		self.setDisplayText('')
+	def clear_table(self):
+		for i in range(1, self.table.rowCount() + 1):
+			self.table.removeRow(1)

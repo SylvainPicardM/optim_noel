@@ -50,18 +50,23 @@ class CheckableComboBox(QComboBox):
                     self.showPopup()
                 return True
             return False
-
         if object == self.view().viewport():
             if event.type() == QEvent.MouseButtonRelease:
                 index = self.view().indexAt(event.pos())
                 item = self.model().item(index.row())
-
                 if item.checkState() == Qt.Checked:
                     item.setCheckState(Qt.Unchecked)
                 else:
                     item.setCheckState(Qt.Checked)
                 return True
         return False
+
+    def clear(self):
+        i = 0
+        while self.model().item(i) is not None:
+            item = self.model().item(i)
+            item.setCheckState(Qt.Unchecked)
+            i += 1
 
     def showPopup(self):
         super().showPopup()
