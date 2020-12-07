@@ -41,7 +41,6 @@ class AppView(QMainWindow):
 
 	def _create_display(self):
 		"""Create the display."""
-		# Create the display widget
 		self.table = QTableWidget()
 		self.table.setRowCount(1)
 		self.table.setColumnCount(2)
