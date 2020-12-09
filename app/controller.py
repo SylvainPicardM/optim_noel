@@ -1,5 +1,3 @@
-from PyQt5.QtWidgets import QTableWidgetItem
-
 class AppController:
     def __init__(self, model, view):
         self._view = view
@@ -21,13 +19,10 @@ class AppController:
             else:
                 p = data["name_product"][pair_product_group[0]]
                 group_dict[group_index].append(p)
-        self._view.set_table(group_dict)
+        self._view.set_display(group_dict)
 
     def _cancel_simu(self):
-        self._view.clear_table()
-        widget = self._view.form.itemAt(1)
-        combo = widget.widget()
-        combo.clear()
+        self._view.clear_display()
 
     def _connect_signals(self):
         self._view.buttons['Run'].clicked.connect(lambda: self._run_simu())
