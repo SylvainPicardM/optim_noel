@@ -1,7 +1,7 @@
 from ortools.linear_solver import pywraplp
 import pandas as pd
 from typing import List, Dict
-
+import argparse
 
 class ProductOptimizer:
 	"""
@@ -93,14 +93,14 @@ class ProductOptimizer:
 		return right_input
 
 	@staticmethod
-	def process_result(status, data, comp_var, group):
+	def process_result(status, data, comp_var, group) -> List:
 		"""
-
-		:param status:
-		:param data:
-		:param comp_var:
-		:param group:
-		:return:
+		Resolve optimization problem
+		:param status: Solver Status
+		:param data: Data matrix
+		:param comp_var: Matrice X
+		:param group: Matrice Y
+		:return: Liste des groupes avec les produits associés
 		"""
 		pair_product_group_list = None
 		if status == pywraplp.Solver.OPTIMAL:
@@ -129,13 +129,15 @@ class ProductOptimizer:
 		# Creation des matrices #
 		#########################
 
-		# Creating group variables, with 0 product each (X)
+		# Creating group variables, with 0 product each (Y)
+		# Crée la matrice Y avec une colonne par produit (liste), remplie de 0
 		group = {}
 		for i in range(data['num_product']):
 			group[i] = self.solver.IntVar(0, 1, 'group[%d]' % i)
 		num_group = self.solver.NumVariables()
 
-		# Creating compatibility variables (A)
+		# Creating compatibility variables (X)
+		# Crée la matrice X, avec une ligne par produit et une colone par groupe, remplie de 0
 		comp_var = []
 		for i in range(data['num_product']):
 			comp_var.append([])
@@ -148,12 +150,14 @@ class ProductOptimizer:
 		############################
 
 		# Contraintes de choix de groupe
+		# Assure qu'un produit n'est attribué qu'a un seul groupe
 		for i in range(data['num_product']):
 			constraint_expr = \
 				[data['comp_matrix'][i][j] * comp_var[i][j] for j in range(data['num_product'])]
 			self.solver.Add(sum(constraint_expr) == 1)
 
 		# Contraintes d'incompatibilite
+		# Assure que deux produits icompatibles ne sont pas associés au même groupe.
 		for i in range(data['num_product']):
 			for j in range(data['num_product']):
 				for k in range(data['num_product']):
@@ -162,6 +166,8 @@ class ProductOptimizer:
 						self.solver.Add(comp_var[i][k] + comp_var[j][k] <= 1)
 
 		# Contraintes pour la création d'un groupe
+		# Assure de ne pas associé trop de produits dans chaque groupe
+		# Quand on associe un produit à un nouveau groupe dans la matrice X, crée le groupe dans la matrice Y (0->1)
 		for i in range(data['num_product']):
 			constraint_expr = [data['comp_matrix'][j][i] * comp_var[j][i] for j in range(data['num_product'])]
 			self.solver.Add(sum(constraint_expr) <= data['num_product'] * group[i])
@@ -189,9 +195,27 @@ class ProductOptimizer:
 		pair_product_group_list = sorted(pair_product_group_list, key=lambda x: x[1])
 		return self.solver, pair_product_group_list, data, var_count
 
+	@staticmethod
+	def print_group(pair_product_group_list, data):
+		"""Print the group"""
+		print('\n---------------------Groups--------------------')
+		pair_product_group_list = sorted(pair_product_group_list, key=lambda x: x[1])
+		group_index = -1
+		for pair_product_group in pair_product_group_list:
+			if group_index != pair_product_group[1]:
+				group_index = pair_product_group[1]
+				print("\nGroup {0} contains : {1}".format(group_index, data['name_product'][pair_product_group[0]]))
+			else:
+				print("{0}                  {1}".format(" " * len(str(group_index)),
+				                                        data['name_product'][pair_product_group[0]]))
 
 if __name__== '__main__':
-	csv_path = 'app/data/retention_pc.csv'
-	list_name = ['825', '815', '835']
-	po = ProductOptimizer(csv_path)
-	solver, pair_product_group_list, data, var_count = po.run_simulation(list_name)
+	parser = argparse.ArgumentParser()
+	parser.add_argument('products', metavar='P', type=str, nargs='+',
+	                    help='Liste des produits pour optimization')
+	parser.add_argument('-C','--csv_path', type=str, default='app/data/retention_pc.csv',
+	                    help="Chemin vers le fichier CSV contenant la matrice de compatibilité")
+	args = parser.parse_args()
+	po = ProductOptimizer(args.csv_path)
+	solver, pair_product_group_list, data, var_count = po.run_simulation(args.products)
+	po.print_group(pair_product_group_list, data)
